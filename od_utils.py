@@ -30,7 +30,7 @@ from skimage import io
 green = [0.36, 0.96, 0.26]
 
 
-def read_annotation_file(annotation_dir, image_dir, file):
+def load_file(annotation_dir, image_dir, file):
     """
     Parse the data from annotation file and get metadata from image
 
@@ -44,11 +44,11 @@ def read_annotation_file(annotation_dir, image_dir, file):
     bounding_boxes = np.genfromtxt(annotation_file, delimiter=',')
 
     image_file = os.path.join(image_dir, file) + ".png"
-    image = io.imread(image_file)
+    image = io.imread(image_file).astype("float32")[:, :, 0:3]
 
     cols, rows = image.shape[:2]
 
-    return {"filepath": image_file, "width": cols, "height": rows, "bboxes": bounding_boxes}
+    return image, {"filepath": image_file, "width": cols, "height": rows, "bboxes": bounding_boxes}
 
 
 class DataGenerator(object):
@@ -73,7 +73,7 @@ class DataGenerator(object):
                         (128, 128), (256, 128), (128, 256),
                         (256, 256), (512, 256), (256, 512)
                         ][0:num_anchors]  # only grab needed
-        self.plot = False
+        self.plot = False # Set True only for debugging purposes!
         self.colors = ["red", "green", "blue"]
 
 
@@ -88,10 +88,8 @@ class DataGenerator(object):
 
             # Calculate RPN for each image
             for file in self.files:
-                # Load annotation
-                data = read_annotation_file(self.annotation_dir, self.image_dir, file)
-                # Load image - without alpha
-                image = io.imread(os.path.join(self.image_dir, file + ".png")).astype("float32")[:, :, 0:3]
+                # Load image and annotation
+                image, data = load_file(self.annotation_dir, self.image_dir, file)
 
                 if self.plot:
                     plt.imshow(image)
@@ -258,13 +256,19 @@ class DataGenerator(object):
                         regression[row, col, self.num_anchors * 4:] = [1.0] * self.num_anchors * 4
 
                 # The RPN has more negative than positive regions, so we want to invalidate the majority
-                # of the valid background classes so that the problem is less unbalanced. It is common to
-                # limit the total number to 256 anchors in total.
+                # of the valid background classes so that the problem is less unbalanced. The loss is only
+                # measured on valid classes, this is taken care of with clever loss functions (see below).
+                # It is common to limit the total number of anchors to 256.
                 num_regions = 32
 
-                # Connected PyCharm to Git
+                # Find all positives - n_pos
 
-                # Rescale image
+                # sample randomly (32 - n_pos) from negatives
+
+                # Set everything else to invalid
+
+
+                # Rescale input image
                 image /= 255.
 
                 # Add to containers
@@ -396,7 +400,7 @@ def rpn_loss_regr(num_anchors):
     """
     def rpn_loss_regr_fixed_num(y_true, y_pred):
 
-        # x is the difference between true value and predicted vaue
+        # x is the difference between true value and predicted value
         x = y_true[:, :, :, 4 * num_anchors:] - y_pred
 
         # absolute value of x
