@@ -258,10 +258,11 @@ class DataGenerator(object):
                         regression[row, col, self.num_anchors * 4:] = [1.0] * self.num_anchors * 4
 
                 # The RPN has more negative than positive regions, so we want to invalidate the majority
-                # of the valid background classes so that problem is less unbalanced. It is common to
+                # of the valid background classes so that the problem is less unbalanced. It is common to
                 # limit the total number to 256 anchors in total.
                 num_regions = 32
 
+                # Connected PyCharm to Git
 
                 # Rescale image
                 image /= 255.
