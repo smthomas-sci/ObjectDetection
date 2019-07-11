@@ -57,24 +57,24 @@ image_dir = "/home/simon/PycharmProjects/ObjectDetection/data/images/"
 data_gen = DataGenerator(annotation_dir, image_dir)
 
 
-# training_steps = 200
-# print(model.metrics_names)
-# for step in range(training_steps):
-#
-#     X, Y_object, Y_regression = next(data_gen)
-#
-#     history = model.train_on_batch(X, [Y_object, Y_regression])
-#     print(step, history)
-#     if history[0] < 1:
-#         print("Stopping early at step", step)
-#         break
-#
-#
-# model.save_weights("./weights/object_detect_steps_{0:04}.h5".format(step+1))
+training_steps = 1000
+print(model.metrics_names)
+for step in range(training_steps):
+
+    X, Y_object, Y_regression = next(data_gen)
+
+    history = model.train_on_batch(X, [Y_object, Y_regression])
+    print(step, history)
+    #if history[0] < 1:
+    #    print("Stopping early at step", step)
+    #    break
+
+
+#model.save_weights("./weights/object_detect_steps_{0:04}.h5".format(step+1))
 
 
 # Load weights
-model.load_weights("./weights/object_detect_steps_0121.h5")
+#model.load_weights("./weights/object_detect_steps_0056.h5")
 
 
 X, Y_object, Y_regression = next(data_gen)
@@ -98,7 +98,7 @@ for r in range(objects[0].shape[0]):
         # Get class prediction
         prob = objects[0][r, c, anchor]
 
-        if prob < 0.9:
+        if prob < 0.5:
             continue
 
         if x + width > data_gen.im_cols or y + height > data_gen.im_rows:
